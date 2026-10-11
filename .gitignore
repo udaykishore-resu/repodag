@@ -3,3 +3,6 @@ dist/
 e2e/out/
 .DS_Store
 *.log
+# build output that editors write inside the test fixtures
+test/fixtures/**/target/
+e2e/fixtures/**/target/

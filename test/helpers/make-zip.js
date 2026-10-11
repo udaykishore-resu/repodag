@@ -92,6 +92,8 @@ function makeZip(files, options) {
 }
 
 /* Zips a directory tree the way GitHub does: everything under one top-level folder. */
+const EDITOR_OUTPUT = new Set(['target', 'bin', 'out', '.idea', '.vscode', '.settings', '.classpath', '.project', '.DS_Store']);
+
 function zipDirectory(dir, topFolder) {
   const files = [];
   const prefix = topFolder ? topFolder.replace(/\/?$/, '/') : '';
@@ -100,6 +102,9 @@ function zipDirectory(dir, topFolder) {
     const entries = fs.readdirSync(path.join(dir, rel), { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : 1));
     for (const e of entries) {
       const childRel = rel ? rel + '/' + e.name : e.name;
+      // Editors compile or index fixture code in place (VS Code's Java support writes jvm/target/ next to a pom.xml).
+      // A GitHub archive would not contain that output, so the fixture zip leaves it out too.
+      if (EDITOR_OUTPUT.has(e.name)) continue;
       if (e.isDirectory()) {
         files.push({ name: prefix + childRel + '/', data: '' });
         walk(childRel);
