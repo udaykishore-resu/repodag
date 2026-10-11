@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "RepoDAG — dependency graph for any repository",
+  "short_name": "RepoDAG",
+  "version": "0.1.0",
+  "description": "Draws a repository's code imports, CI pipeline and third-party packages as left-to-right dependency graphs, in your browser.",
+  "minimum_chrome_version": "111",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "RepoDAG",
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://github.com/*",
+    "https://codeload.github.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_security_policy": {
+    "extension_pages": "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src https://github.com https://codeload.github.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+  }
+}

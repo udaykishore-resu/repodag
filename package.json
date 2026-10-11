@@ -1,0 +1,19 @@
+{
+  "name": "repodag",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Chrome extension: draws a repository's code imports, CI pipeline and third-party packages as left-to-right dependency graphs.",
+  "author": "Udaykishore Resu",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "e2e": "node e2e/run.js",
+    "screenshots": "node store/make-screenshots.js",
+    "icons": "node store/make-icons.js",
+    "scan": "node scripts/scan-cli.js",
+    "package": "bash scripts/package.sh"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.0"
+  }
+}

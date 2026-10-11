@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RepoDAG</title>
+    <link rel="icon" href="icons/icon32.png" />
+    <link rel="stylesheet" href="viewer.css" />
+  </head>
+  <body>
+    <header class="bar">
+      <h1 class="brand"><img src="icons/icon32.png" alt="" width="20" height="20" />RepoDAG</h1>
+      <form id="source-form" class="source" hidden>
+        <a id="repo-link" class="path" target="_blank" rel="noopener noreferrer"></a>
+        <label for="ref">at</label>
+        <input id="ref" class="path" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" aria-describedby="ref-hint" />
+        <button id="reload" type="submit">Load</button>
+        <span id="ref-hint" class="hint">branch, tag or commit</span>
+      </form>
+      <p id="source-local" class="source path" hidden></p>
+      <div class="bar-actions">
+        <button id="open-zip" type="button">Open a zip</button>
+        <button id="open-folder" type="button">Open a folder</button>
+        <input id="zip-input" type="file" accept=".zip,application/zip" hidden />
+        <input id="folder-input" type="file" webkitdirectory hidden />
+      </div>
+    </header>
+
+    <div class="strip" id="strip" hidden>
+      <div class="tabs" role="tablist" aria-label="Graph">
+        <button role="tab" id="tab-code" data-tab="code" aria-selected="true" aria-controls="stage">Code imports</button>
+        <button role="tab" id="tab-ci" data-tab="ci" aria-selected="false" aria-controls="stage" tabindex="-1">CI pipeline</button>
+        <button role="tab" id="tab-packages" data-tab="packages" aria-selected="false" aria-controls="stage" tabindex="-1">Third-party packages</button>
+      </div>
+      <dl class="summary" id="summary" aria-label="Summary"></dl>
+    </div>
+
+    <main class="work" id="work">
+      <aside class="rail" id="rail" aria-label="View controls" hidden>
+        <section>
+          <h2 id="find-h">Find</h2>
+          <div class="find">
+            <input id="search" type="search" placeholder="Name or path" aria-labelledby="find-h" spellcheck="false" autocomplete="off" />
+            <button id="search-next" type="button" title="Go to the next match (Enter)">Next</button>
+          </div>
+          <p id="search-count" class="hint" role="status" aria-live="polite"></p>
+        </section>
+
+        <section id="level-section">
+          <h2>Show</h2>
+          <div class="choices" role="radiogroup" aria-label="Level of detail">
+            <label><input type="radio" name="level" value="files" /> <span id="level-files-label">Files</span></label>
+            <label><input type="radio" name="level" value="packages" /> <span id="level-packages-label">Packages</span></label>
+            <label><input type="radio" name="level" value="folders" /> <span>Folders, <output id="depth-out" for="depth">2</output> deep</span></label>
+          </div>
+          <input id="depth" type="range" min="1" max="6" step="1" value="2" aria-label="Folder depth" />
+          <label class="check"><input id="include-tests" type="checkbox" /> Include tests</label>
+          <label class="field">Colour by
+            <select id="group-by">
+              <option value="folder">Folder</option>
+              <option value="language">Language</option>
+            </select>
+          </label>
+        </section>
+
+        <section id="packages-section" hidden>
+          <h2>Show</h2>
+          <label class="check"><input id="include-dev" type="checkbox" checked /> Development and test dependencies</label>
+          <label class="check"><input id="include-indirect" type="checkbox" /> Indirect Go requirements</label>
+        </section>
+
+        <section>
+          <h2>Legend</h2>
+          <p id="arrow-meaning" class="hint"></p>
+          <ul id="legend" class="legend"></ul>
+          <ul class="legend lines">
+            <li><svg width="34" height="10" aria-hidden="true"><line x1="1" y1="5" x2="26" y2="5" class="k-edge" /><path d="M26,1.5 L33,5 L26,8.5 Z" class="k-head" /></svg> <span id="legend-edge">depends on</span></li>
+            <li id="legend-tests" hidden><svg width="34" height="14" aria-hidden="true"><rect x="1.5" y="1.5" width="31" height="11" rx="2.5" class="k-tests" /></svg> <span>Go external test package (package x_test): separate from the package it tests</span></li>
+            <li id="legend-dev" hidden><svg width="34" height="10" aria-hidden="true"><line x1="1" y1="5" x2="26" y2="5" class="k-dev" /><path d="M26,1.5 L33,5 L26,8.5 Z" class="k-head" /></svg> <span>development, build or test only (dotted; hollow dot when nothing else asks for it)</span></li>
+            <li><svg width="34" height="10" aria-hidden="true"><line x1="8" y1="5" x2="33" y2="5" class="k-cycle" /><path d="M8,1.5 L1,5 L8,8.5 Z" class="k-cyclehead" /></svg> <span>closes a cycle (red, dashed, points left)</span></li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 id="cycles-h">Cycles</h2>
+          <p id="cycles-empty" class="hint"></p>
+          <ol id="cycles" class="cycles" aria-labelledby="cycles-h"></ol>
+        </section>
+
+        <section>
+          <h2>Export this view</h2>
+          <ul class="exports">
+            <li><span>SVG</span> <button type="button" data-export="svg" data-how="download">Download</button></li>
+            <li><span>Mermaid</span> <button type="button" data-export="mermaid" data-how="download">Download</button> <button type="button" data-export="mermaid" data-how="copy">Copy</button></li>
+            <li><span>Graphviz DOT</span> <button type="button" data-export="dot" data-how="download">Download</button> <button type="button" data-export="dot" data-how="copy">Copy</button></li>
+            <li><span>JSON</span> <button type="button" data-export="json" data-how="download">Download</button> <button type="button" data-export="json" data-how="copy">Copy</button></li>
+          </ul>
+          <p id="export-status" class="hint" role="status" aria-live="polite"></p>
+        </section>
+      </aside>
+
+      <section class="stage" id="stage" role="tabpanel" aria-labelledby="tab-code">
+        <div id="message" class="message" hidden></div>
+        <svg id="graph" class="graph" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="Dependency graph" hidden>
+          <defs>
+            <marker id="head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,1 L10,5 L0,9 Z" class="m-head" /></marker>
+            <marker id="head-on" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,1 L10,5 L0,9 Z" class="m-head-on" /></marker>
+            <marker id="head-cycle" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,1 L10,5 L0,9 Z" class="m-head-cycle" /></marker>
+          </defs>
+          <g id="viewport">
+            <g id="bands"></g>
+            <g id="edges"></g>
+            <g id="nodes"></g>
+          </g>
+        </svg>
+        <div class="zoom" id="zoom" hidden>
+          <span id="zoom-note" class="zoom-note" hidden>Part of the graph is off screen.</span>
+          <button id="zoom-in" type="button" aria-label="Zoom in" title="Zoom in (+)">+</button>
+          <button id="zoom-out" type="button" aria-label="Zoom out" title="Zoom out (-)">&minus;</button>
+          <button id="zoom-fit" type="button" title="Fit the whole graph (0)">Fit</button>
+        </div>
+      </section>
+
+      <aside class="panel" id="panel" aria-label="Details" hidden>
+        <section id="detail" hidden></section>
+        <section id="notes"></section>
+      </aside>
+    </main>
+
+    <script src="lib/js-yaml.min.js"></script>
+    <script src="lib/lex.js"></script>
+    <script src="lib/toml.js"></script>
+    <script src="lib/zip.js"></script>
+    <script src="lib/imports.js"></script>
+    <script src="lib/manifests.js"></script>
+    <script src="lib/workflows.js"></script>
+    <script src="lib/scan.js"></script>
+    <script src="lib/views.js"></script>
+    <script src="lib/graph.js"></script>
+    <script src="lib/export.js"></script>
+    <script src="lib/ghurl.js"></script>
+    <script src="viewer.js"></script>
+  </body>
+</html>

@@ -1,0 +1,6 @@
+[project]
+name = "poly"
+dependencies = ["requests>=2.31"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]

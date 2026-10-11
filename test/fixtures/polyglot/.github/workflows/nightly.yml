@@ -1,0 +1,12 @@
+name: Nightly
+on:
+  schedule:
+    - cron: "0 3 * * *"
+jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
+  report:
+    needs: checks
+    runs-on: ubuntu-latest
+    steps:
+      - run: make report

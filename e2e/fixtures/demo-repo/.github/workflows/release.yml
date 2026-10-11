@@ -1,0 +1,8 @@
+name: Release
+on:
+  workflow_call:
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo published
